@@ -10,7 +10,9 @@ class GAT_gate(torch.nn.Module):
         self.W = nn.Linear(n_in_feature, n_out_feature)
         #self.A = nn.Parameter(torch.Tensor(n_out_feature, n_out_feature))
         self.A = nn.Parameter(torch.zeros(size=(n_out_feature, n_out_feature)))
-        self.gate = nn.Linear(n_out_feature*2, 1)
+        self.input_gate = nn.Linear(n_out_feature*2, 1)
+        self.forget_gate = nn.Linear(n_out_feature*2, 1)
+        self.output_gate = nn.Linear(n_out_feature*2, 1)
         self.leakyrelu = nn.LeakyReLU(0.2)
         self.zeros = torch.zeros(1)
         if gpu > 0:
@@ -29,11 +31,10 @@ class GAT_gate(torch.nn.Module):
         #h_prime = torch.matmul(attention, h)
         attention = attention*adj
         h_prime = F.relu(torch.einsum('aij,ajk->aik',(attention, h)))
-       
-        coeff = torch.sigmoid(self.gate(torch.cat([x,h_prime], -1))).repeat(1,1,x.size(-1))
-        retval = coeff*x+(1-coeff)*h_prime
-        
-        if not get_attention:
-            return retval
-
-        return retval, attention
+        concat = torch.cat([x,h_prime], -1)
+        input_coeff = torch.sigmoid(self.input_gate(concat)).repeat(1,1,x.size(-1))
+        forget_coeff = torch.sigmoid(self.forget_gate(concat)).repeat(1,1,x.size(-1))
+        output_coeff = torch.sigmoid(self.output_gate(concat)).repeat(1,1,x.size(-1))
+        h_joint = torch.sigmoid(input_coeff * h_prime + forget_coeff * x)
+        retval = output_coeff * torch.tanh(h_joint)
+        return retval
