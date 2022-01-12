@@ -5,15 +5,19 @@ from utils import *
 import time
 
 class GAT_gate(torch.nn.Module):
-    def __init__(self, n_in_feature, n_out_feature, gpu = 0):
+    def __init__(self, n_in_feature, n_out_feature, dropout=0.0, gpu = 0):
         super(GAT_gate, self).__init__()
         self.W = nn.Linear(n_in_feature, n_out_feature)
         #self.A = nn.Parameter(torch.Tensor(n_out_feature, n_out_feature))
         self.A = nn.Parameter(torch.zeros(size=(n_out_feature, n_out_feature)))
-        self.input_gate = nn.Linear(n_out_feature*2, 1)
-        self.forget_gate = nn.Linear(n_out_feature*2, 1)
-        self.output_gate = nn.Linear(n_out_feature*2, 1)
+        self.input_gate_u = nn.Linear(n_out_feature, 1)
+        self.input_gate_w = nn.Linear(n_out_feature, 1)
+        self.forget_gate_u = nn.Linear(n_out_feature, 1)
+        self.forget_gate_w = nn.Linear(n_out_feature, 1)
+        self.output_gate_u = nn.Linear(n_out_feature, 1)
+        self.output_gate_w = nn.Linear(n_out_feature, 1)
         self.leakyrelu = nn.LeakyReLU(0.2)
+        self.dropout = dropout
         self.zeros = torch.zeros(1)
         if gpu > 0:
             self.zeros = self.zeros.cuda()
@@ -31,10 +35,26 @@ class GAT_gate(torch.nn.Module):
         #h_prime = torch.matmul(attention, h)
         attention = attention*adj
         h_prime = F.relu(torch.einsum('aij,ajk->aik',(attention, h)))
-        concat = torch.cat([x,h_prime], -1)
-        input_coeff = torch.sigmoid(self.input_gate(concat)).repeat(1,1,x.size(-1))
-        forget_coeff = torch.sigmoid(self.forget_gate(concat)).repeat(1,1,x.size(-1))
-        output_coeff = torch.sigmoid(self.output_gate(concat)).repeat(1,1,x.size(-1))
+        # concat = torch.cat([x,h_prime], -1)
+        
+        input_coeff_u = self.input_gate_u(h_prime)
+        input_coeff_u = F.dropout(input_coeff_u, self.dropout, training=self.training)
+        input_coeff_w = self.input_gate_w(x)
+        input_coeff_w = F.dropout(input_coeff_w, self.dropout, training=self.training)
+        input_coeff = torch.sigmoid(input_coeff_u + input_coeff_w).repeat(1,1,x.size(-1))
+
+        forget_coeff_u = self.forget_gate_u(h_prime)
+        forget_coeff_u = F.dropout(forget_coeff_u, self.dropout, training=self.training)
+        forget_coeff_w = self.forget_gate_w(x)
+        forget_coeff_w = F.dropout(forget_coeff_w, self.dropout, training=self.training)
+        forget_coeff = torch.sigmoid(forget_coeff_u + forget_coeff_w).repeat(1,1,x.size(-1))
+
+        output_coeff_u = self.output_gate_u(h_prime)
+        output_coeff_u = F.dropout(output_coeff_u, self.dropout, training=self.training)
+        output_coeff_w = self.output_gate_w(x)
+        output_coeff_w = F.dropout(output_coeff_w, self.dropout, training=self.training)
+        output_coeff = torch.sigmoid(output_coeff_u + output_coeff_w).repeat(1,1,x.size(-1))
+
         h_joint = torch.sigmoid(input_coeff * h_prime + forget_coeff * x)
         retval = output_coeff * torch.tanh(h_joint)
         return retval
