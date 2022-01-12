@@ -13,7 +13,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--active_threshold", help="active threshold", type=int, default = 0.5)
 parser.add_argument("--interaction_threshold", help="interaction threshold", type=int, default = 0.5)
-parser.add_argument("--ckpt", help="saved model file", type=str, default = "save/best_origin_bach_0.878.pt")
+parser.add_argument("--ckpt", help="saved model file", type=str, default = "save/best_origin_opt12_0.878.pt")
 parser.add_argument("--ngpu", help="number of gpu", type=int, default = 1)
 parser.add_argument("--batch_size", help="batch_size", type=int, default = 32)
 parser.add_argument("--n_graph_layer", help="number of GNN layer", type=int, default = 4)
