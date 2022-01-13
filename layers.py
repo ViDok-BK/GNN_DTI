@@ -62,5 +62,5 @@ class GAT_gate(torch.nn.Module):
         # h_joint = F.dropout(h_joint, self.dropout, training=self.training)
         retval = output_coeff * torch.tanh(h_joint)
         if get_attention:
-            return attention, retval
+            return retval, attention
         return retval
