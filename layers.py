@@ -10,12 +10,12 @@ class GAT_gate(torch.nn.Module):
         self.W = nn.Linear(n_in_feature, n_out_feature)
         #self.A = nn.Parameter(torch.Tensor(n_out_feature, n_out_feature))
         self.A = nn.Parameter(torch.zeros(size=(n_out_feature, n_out_feature)))
-        self.input_gate_u = nn.Linear(n_out_feature, 1)
-        self.input_gate_w = nn.Linear(n_out_feature, 1)
-        self.forget_gate_u = nn.Linear(n_out_feature, 1)
-        self.forget_gate_w = nn.Linear(n_out_feature, 1)
-        self.output_gate_u = nn.Linear(n_out_feature, 1)
-        self.output_gate_w = nn.Linear(n_out_feature, 1)
+        self.input_gate_u = nn.Linear(n_out_feature, 1, bias = False)
+        self.input_gate_w = nn.Linear(n_out_feature, 1, bias = False)
+        self.forget_gate_u = nn.Linear(n_out_feature, 1, bias = False)
+        self.forget_gate_w = nn.Linear(n_out_feature, 1, bias = False)
+        self.output_gate_u = nn.Linear(n_out_feature, 1, bias = False)
+        self.output_gate_w = nn.Linear(n_out_feature, 1, bias = False)
         self.leakyrelu = nn.LeakyReLU(0.2)
         self.dropout = dropout
         self.zeros = torch.zeros(1)
@@ -58,9 +58,7 @@ class GAT_gate(torch.nn.Module):
         output_coeff = torch.sigmoid(output_coeff_u + output_coeff_w).repeat(1,1,x.size(-1))
         # output_coeff = F.dropout(output_coeff, self.dropout, training=self.training)
 
-        h_joint = torch.sigmoid(input_coeff * h_prime + forget_coeff * x)
-        # h_joint = F.dropout(h_joint, self.dropout, training=self.training)
-        retval = output_coeff * torch.tanh(h_joint)
+        retval = output_coeff * torch.tanh(input_coeff * h_prime + forget_coeff * x)
         if get_attention:
             return retval, attention
         return retval
