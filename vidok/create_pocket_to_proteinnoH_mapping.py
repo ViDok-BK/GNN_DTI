@@ -38,10 +38,11 @@ def get_pocket(f_name_in, f_name_out, f_name_mapping, ranges):
     print("Mapping:")
     print(pocket2protein_mapping)
 
-    with open(f_name_mapping, 'w') as f:
-        f.write("pocket_idx,protein_noH_idx\n")
-        for pk_idx, pr_idx in pocket2protein_mapping.items():
-            f.write("%d,%d\n" % (pk_idx, pr_idx))
+    if f_name_mapping != "":
+        with open(f_name_mapping, 'w') as f:
+            f.write("pocket_idx,protein_noH_idx\n")
+            for pk_idx, pr_idx in pocket2protein_mapping.items():
+                f.write("%d,%d\n" % (pk_idx, pr_idx))
 
 if __name__ == "__main__":
     ranges = get_ranges()
